@@ -27,6 +27,11 @@
  *@default 100
  *@type number
  *
+ *@param TP Max
+ *@desc Control what is the maximum value for TP in game.
+ *@default 100
+ *@type number
+ *
  *@param Clear All States
  *@desc Remove all states?
  *@default false
@@ -42,6 +47,7 @@ var synrecRecover = params['Enable Auto Recovery'].toLowerCase();
 var hpRecover = toNumber(params['HP Recovery'], 100);
 var mpRecover = toNumber(params['MP Recovery'], 100);
 var tpRecover = toNumber(params['TP Recovery'], 100);
+var tpMax = toNumber(params['TP Max'], 100);
 var clearStates = params['Clear All States'].toLowerCase();
 
 
@@ -60,4 +66,10 @@ BattleManager.endBattle = function(result) {
            }
         }
     }
+};
+
+synrecMaxTp = Game_BattlerBase.prototype.maxTp;
+Game_BattlerBase.prototype.maxTp = function() {
+	synrecMaxTp.call(this);
+    return tpMax;
 };
