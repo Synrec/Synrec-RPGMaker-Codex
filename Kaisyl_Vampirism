@@ -1,0 +1,171 @@
+/*:
+* @author Kaisyl/Synrec
+* @plugindesc (v1) A plugin which adds vampire effect to a designated state.
+* @help You must have the attack type set to HP/MP drain for this to work.
+*
+* You will not drain more HP/MP than the target's current HP/MP.
+*
+* Only one state (chosen in the plugin editor) is allowed
+* to be the vampire state.
+*
+* To edit the drain text, please do so from your database.
+* If necessary, I will implement it here.
+*
+* @param Global Vampirism
+* @type number
+* @decimals 2
+* @default 0.00
+* @desc Control default drain multiplier.
+*
+* @param Minimal Vampirism
+* @type number
+* @default 1
+* @desc Flat minimal value of drain effect.
+*
+* @param Vampire State
+* @type number
+* @default 11
+* @desc The state ID which gives vampire ability.
+*
+* @param Vampirism Value
+* @type number
+* @default 1.00
+* @decimals 2
+* @default 1.00
+* @desc Control the state drain multiplier.
+*
+* @param Remove 0s Popup?
+* @type boolean
+* @default true
+* @desc Remove 0 damage and 0 absorbtion from battle.
+*/
+
+//Plugin Manager Parameters
+var params = PluginManager.parameters('Kaisyl_Vampirism');
+var globalVamp = parseFloat(params['Global Vampirism']);
+var vampState = parseInt(params['Vampire State']);
+var minVamp = parseInt(params['Minimal Vampirism']);
+var vampricAbsorb = parseFloat(params['Vampirism Value']);
+var synrecZeroCheck = params['Remove 0s Popup'].toLowerCase();
+//Plugin core variables
+var absorb = 0;
+var vampricHealing = 0;
+var vampireState = false;
+var actorVampId = 0;
+var enemyVampId = 0;
+
+function kaisylVampTag (){
+	vampricHealing = 0;
+	if (vampireState == true) {
+		vampirism = vampricAbsorb;
+		console.log('Error, vampirism is not a valid value or user has no vampire state.');
+	}
+	if (vampireState == false) {
+		vampirism = globalVamp;
+		console.log('Error, vampirism is not a valid value or user has no vampire state.');
+	}
+	vampricHealing = Math.floor(parseInt(vampirism * absorb));
+	if (vampricHealing == 0) {
+		vampricHealing == minVamp;
+	}
+}
+
+synrecHpDamage = Game_Action.prototype.executeHpDamage;
+Game_Action.prototype.executeHpDamage = function(target, value) {
+	target_hp = target.hp;
+	absorb = Math.min(target_hp, value);
+	if (this._subjectActorId > 0){
+		actorVampId = this._subjectActorId;
+		var actorStates = $gameActors._data[actorVampId]._states;
+		console.log(actorStates);
+		var actorVampTrue = actorStates.includes(vampState);
+		console.log(actorVampTrue);
+		if (actorVampTrue == true){
+			vampireState = true;
+			console.log('actor vamp');
+		}
+		if (actorVampTrue == false){
+			vampireState = false;
+			console.log('no vamp state actor');
+		}
+	}
+	else{
+		enemyVampId = this._subjectEnemyIndex;
+		var enemyStates = $gameTroop._enemies[enemyVampId]._states;
+		var enemyVampTrue = enemyStates.includes(vampState);
+		if (enemyVampTrue == true){
+			vampireState = true;
+			console.log('enemy vamp');
+		}
+		if (enemyVampTrue == false){
+			vampireState = false;
+			console.log('no vamp state actor');
+		}
+	}
+	kaisylVampTag();
+	synrecHpDamage.call(this, target, value);
+};
+
+synrecMpDamage = Game_Action.prototype.executeMpDamage;
+Game_Action.prototype.executeMpDamage = function(target, value) {
+	target_mp = target.mp;
+	absorb = Math.min(target_mp, value);
+	if (this._subjectActorId > 0){
+		actorVampId = this._subjectActorId;
+		var actorStates = $gameActors._data[actorVampId]._states;
+		var actorVampTrue = actorStates.includes(vampState);
+		if (actorVampTrue == true){
+			vampireState = true;
+			console.log('actor vamp');
+		}
+		if (actorVampTrue == false){
+			vampireState = false;
+			console.log('no vamp state actor');
+		}
+	}
+	else{
+		enemyVampId = this._subjectEnemyIndex;
+		var enemyStates = $gameTroop._enemies[enemyVampId]._states;
+		var enemyVampTrue = enemyStates.includes(vampState);
+		if (enemyVampTrue == true){
+			vampireState = true;
+			console.log('enemy vamp');
+		}
+		if (enemyVampTrue == false){
+			vampireState = false;
+			console.log('no vamp state actor');
+		}
+	}
+	kaisylVampTag();
+	synrecMpDamage.call(this, target, value);
+};
+
+synrecGainHpDrain = Game_Action.prototype.gainDrainedHp
+Game_Action.prototype.gainDrainedHp = function(value) {
+	if (this.isDrain()) {
+       value = vampricHealing;
+    }
+	synrecGainHpDrain.call(this, value);
+	vampricHealing = 0;
+};
+
+synrecGainMpDrain = Game_Action.prototype.gainDrainedMp;
+Game_Action.prototype.gainDrainedMp = function(value) {
+	if (this.isDrain()) {
+       value = vampricHealing;
+    }
+	synrecGainMpDrain.call(this, value);
+	vampricHealing = 0;
+};
+
+synrecZeroDrain = Sprite_Damage.prototype.setup;
+Sprite_Damage.prototype.setup = function(target) {
+    var result = target.result();
+	if (synrecZeroCheck == 'true'){
+		if (!result.hpAffected || result.hpDamage !== 0 || result.missed || result.evaded) {
+        synrecZeroDrain.call(this, target);
+    }
+	else{
+		synrecZeroDrain.call(this, target);
+    }
+};
