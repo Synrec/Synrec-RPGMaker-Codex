@@ -1,7 +1,9 @@
 /*:
 * @author Kaisyl/Synrec
-* @plugindesc (v1) A plugin which adds vampire effect to a designated state.
+* @plugindesc (v2) A plugin which adds vampire effect to a designated state.
 * @help You must have the attack type set to HP/MP drain for this to work.
+* Plugin Changes:
+* v2: Fixed some syntax errors and bugs.
 *
 * You will not drain more HP/MP than the target's current HP/MP.
 *
@@ -46,7 +48,7 @@ var globalVamp = parseFloat(params['Global Vampirism']);
 var vampState = parseInt(params['Vampire State']);
 var minVamp = parseInt(params['Minimal Vampirism']);
 var vampricAbsorb = parseFloat(params['Vampirism Value']);
-var synrecZeroCheck = params['Remove 0s Popup'].toLowerCase();
+var synrecZeroCheck = params['Remove 0s Popup?'].toLowerCase();
 //Plugin core variables
 var absorb = 0;
 var vampricHealing = 0;
@@ -163,9 +165,10 @@ Sprite_Damage.prototype.setup = function(target) {
     var result = target.result();
 	if (synrecZeroCheck == 'true'){
 		if (!result.hpAffected || result.hpDamage !== 0 || result.missed || result.evaded) {
-        synrecZeroDrain.call(this, target);
+			synrecZeroDrain.call(this, target);
+		}
     }
 	else{
 		synrecZeroDrain.call(this, target);
-    }
+	}
 };
