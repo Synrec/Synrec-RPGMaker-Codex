@@ -1,8 +1,11 @@
 /*:
  *@author Kaisyl/Synrec
- *@plugindesc (v1)Recover HP after battle.
+ *@plugindesc (v2) Control HP, MP and TP effects.
  *@help Recover HP after battle by enabling this plugin.
- *Credit given to Silva for assistance in creating this script.
+ *PLUGIN CHANGES:
+ *v2: 
+ *- Added TP initialize control.
+ *- Fixed a few stuff for future edits if necessary
  *
  *@param Enable Auto Recovery
  *@desc Enable or Disable recovery after every battle
@@ -28,29 +31,29 @@
  *@default 100
  *@type number
  *
- *@param TP Max
- *@desc Control what is the maximum value for TP in game.
- *@default 100
- *@type number
- *
  *@param Clear All States
  *@desc Remove all states?
  *@default false
  *@type boolean
+ *
+ *@param Max TP
+ *@desc Maximum Value for TP in game.
+ *@type number
+ *@default 100
+ *
+ *@param Initial TP
+ *@desc Set the starting TP, will not be more than max.
+ *@type number
+ *@default 100
  */
- 
-function toNumber(str, def) {
-    return isNaN(str) ? def : +(str || def);
-}
-
 var params = PluginManager.parameters('Kaisyl_Battle_Recovery');
 var synrecRecover = params['Enable Auto Recovery'].toLowerCase();
-var hpRecover = toNumber(params['HP Recovery'], 100);
-var mpRecover = toNumber(params['MP Recovery'], 100);
-var tpRecover = toNumber(params['TP Recovery'], 100);
-var tpMax = toNumber(params['TP Max'], 100);
+var hpRecover = parseInt(params['HP Recovery'], 100);
+var mpRecover = parseInt(params['MP Recovery'], 100);
+var tpRecover = parseInt(params['TP Recovery'], 100);
 var clearStates = params['Clear All States'].toLowerCase();
-
+var tpMax = parseInt(params['Max TP']);
+var initialTpMax = parseInt(params['Initial TP']);
 
 kaisylEndOfWar = BattleManager.endBattle;
 BattleManager.endBattle = function(result) {
@@ -59,7 +62,6 @@ BattleManager.endBattle = function(result) {
         var party = $gameParty.battleMembers();
         for (var mem = 0; mem < party.length; mem++) {
            var member = party[mem];
-		   console.log(party);
            member.gainHp(Math.ceil(member.mhp * hpRecover/100));
            member.gainMp(Math.ceil(member.mmp * mpRecover/100));
            member.gainTp(tpRecover);
@@ -70,8 +72,14 @@ BattleManager.endBattle = function(result) {
     }
 };
 
+synrecInitTp = Game_Battler.prototype.initTp;
+Game_Battler.prototype.initTp = function() {
+	synrecInitTp.call(this);
+    this.setTp(initialTpMax);
+};
+
 synrecMaxTp = Game_BattlerBase.prototype.maxTp;
 Game_BattlerBase.prototype.maxTp = function() {
 	synrecMaxTp.call(this);
-    return tpMax;
+	return tpMax;
 };
