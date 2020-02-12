@@ -1,6 +1,6 @@
 /*:
  *@author Kaisyl/Synrec
- *@plugindesc (v3) Allows State stacking
+ *@plugindesc (v4) Allows State stacking
  *@help Use the tag <stateStackable:x> to allow a state to stack.
  *Use <stackBurst:x> to remove all state stacks and add a new state
  *when max stack conditions are met.
@@ -20,6 +20,8 @@
  *Fixed the problem of burst effect not stacking.
  *v3: Removed secondary burst effect for optimization reasons.
  *State overflow instead allows for an alternative state post burst.
+ *v4: Fixed a bug where the game would crash when burst state is 
+ *undefined.
  *
  *@param State Overflow
  *@default false
@@ -51,7 +53,8 @@ Game_Battler.prototype.addState = function(stateId) {
 				this.refresh;
 			}	
 		}
-		if (stateCount >= stateStackable && !this.isStateAffected(stackBurst) && stackBurst != 0){
+		if (stateCount >= stateStackable && !this.isStateAffected(stackBurst) && isNaN(stackBurst) == false){
+			console.log('trig');
 			for (i = 0; i < stateCount; i++){
 				this.removeState(stateId);
 			}
@@ -59,16 +62,14 @@ Game_Battler.prototype.addState = function(stateId) {
 			this.refresh();
 		}
 		if (overFlow == 'true' && this.isStateAffected(stackBurst)){
-			var overFlowState = parseInt($dataStates[stateId].meta.stackOverFlow);
-			console.log('almost...');
+			var overFlowState = parseInt($dataStates[stateId].meta.stackOverFlow)
 			if (isNaN(overFlowState) == false){
 				this.addNewState(overFlowState);
 				this.refresh;
-				console.log('victor');
 			}
 		}
 	}
-	if (isNaN(stateStackable) == true || isNaN(stackBurst) == true){
+	if (isNaN(stateStackable) == true || (isNaN(stackBurst) == true && isNaN(stateStackable) == true){
 		synrecAddState.call(this, stateId);
 	}
 };
