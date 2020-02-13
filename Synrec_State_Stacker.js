@@ -69,7 +69,7 @@ Game_Battler.prototype.addState = function(stateId) {
 			}
 		}
 	}
-	if (isNaN(stateStackable) == true || (isNaN(stackBurst) == true && isNaN(stateStackable) == true){
+	if (isNaN(stateStackable) == true || (isNaN(stackBurst) == true && isNaN(stateStackable) == true)){
 		synrecAddState.call(this, stateId);
 	}
 };
