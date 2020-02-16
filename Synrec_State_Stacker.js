@@ -1,6 +1,6 @@
 /*:
  *@author Kaisyl/Synrec
- *@plugindesc (v4) Allows State stacking
+ *@plugindesc (v5) Allows State stacking
  *@help Use the tag <stateStackable:x> to allow a state to stack.
  *Use <stackBurst:x> to remove all state stacks and add a new state
  *when max stack conditions are met.
@@ -22,6 +22,8 @@
  *State overflow instead allows for an alternative state post burst.
  *v4: Fixed a bug where the game would crash when burst state is 
  *undefined.
+ *v5: Fixed a bug where a state can be added +1 to the designers defined
+ *maximum.
  *
  *@param State Overflow
  *@default false
@@ -47,14 +49,13 @@ Game_Battler.prototype.addState = function(stateId) {
 	}
 	if ((isNaN(stateStackable) == false  ||(isNaN(stateStackable) == false && isNaN(stackBurst) == false)) && !this.isStateAffected(stackBurst)){
 		if (stateStackable !== 0){
-			if (stateCount <= stateStackable && !this.isStateAffected(stackBurst)){
+			if (stateCount < stateStackable && !this.isStateAffected(stackBurst)){
 				this.addNewState(stateId); //addState.
 				stateCount++;
 				this.refresh;
 			}	
 		}
 		if (stateCount >= stateStackable && !this.isStateAffected(stackBurst) && isNaN(stackBurst) == false){
-			console.log('trig');
 			for (i = 0; i < stateCount; i++){
 				this.removeState(stateId);
 			}
