@@ -1,6 +1,6 @@
 /*:
  *@author Kaisyl/Synrec
- *@plugindesc (v5) Allows State stacking
+ *@plugindesc (v6) Allows State stacking
  *@help Use the tag <stateStackable:x> to allow a state to stack.
  *Use <stackBurst:x> to remove all state stacks and add a new state
  *when max stack conditions are met.
@@ -24,6 +24,8 @@
  *undefined.
  *v5: Fixed a bug where a state can be added +1 to the designers defined
  *maximum.
+ *v6: Removed state icon duplication, added a number which indicates stack
+ *amount.
  *
  *@param State Overflow
  *@default false
@@ -36,6 +38,7 @@ var overFlow = params['State Overflow'].toLowerCase();
 var stateCount = 0;
 var stateStackable = 0;
 var stackBurst = 0;
+var stateCounter = [];
 
 synrecAddState = Game_Battler.prototype.addState;
 Game_Battler.prototype.addState = function(stateId) {
@@ -72,5 +75,64 @@ Game_Battler.prototype.addState = function(stateId) {
 	}
 	if (isNaN(stateStackable) == true || (isNaN(stackBurst) == true && isNaN(stateStackable) == true)){
 		synrecAddState.call(this, stateId);
+	}
+};
+
+function arrayDuplioChkr(Arr1, Arr2){
+	var lastItem = [0];
+	var lastIndex = [0];
+	var y = 0;
+	console.log(lastIndex + ' ' + Arr2);
+	for (i = 0; i < Arr1.length; i++){
+		if (i == 0 && Arr2[y] == Arr1[i]){
+			if (lastIndex[y] == undefined){
+				lastIndex[y] = 0;
+			}
+			if (stateCounter[y] = undefined){
+				stateCounter[y] = 0;
+			}
+			lastIndex[y]++;
+			stateCounter.push(lastIndex[y]);
+			y = i;
+		}
+		if (Arr2[y] == Arr1[i] && i !== 0){
+			if (lastIndex[y] == undefined){
+				lastIndex[y] = 0;
+			}
+			if (stateCounter[y] = undefined){
+				stateCounter[y] = 0;
+			}
+			lastIndex[y]++;
+		}
+		if (Arr2[y] !== Arr1[i]){
+			y++;
+			if (lastIndex[y] == undefined){
+				lastIndex[y] = 0;
+			}
+			if (stateCounter[y] = undefined && Arr1[i] !== undefined){
+				stateCounter[y] = 0;
+			}
+			if (Arr2[y] == Arr1[i]){
+				lastIndex[y]++
+			}
+		}
+	}
+	stateCounter = lastIndex;
+}
+
+synrecDrawActorIcons = Window_Base.prototype.drawActorIcons;
+Window_Base.prototype.drawActorIcons = function(actor, x, y, width) {
+	var iconCounts = actor.allIcons();
+	actorIcons = Array.from(new Set(actor.allIcons()));
+	var icons = actorIcons.slice(0, Math.floor(width / Window_Base._iconWidth));
+	stateCounter = [];
+	arrayDuplioChkr(iconCounts,icons);
+	for (var i = 0; i < icons.length; i++) {
+		this.drawIcon(icons[i], x + Window_Base._iconWidth * i, y + 2);
+		this.drawText(stateCounter[i], x + Window_Base._iconWidth * i + 8, y + 2);
+    }
+	
+	if (icons.length == 0){
+		synrecDrawActorIcons.call(this, actor, x, y, width);
 	}
 };
