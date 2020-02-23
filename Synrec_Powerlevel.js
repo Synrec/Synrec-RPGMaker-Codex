@@ -1,6 +1,6 @@
 /*:
 *@author Kaisyl/Synrec
-*@plugindesc (v2) Changes how levels work in game.
+*@plugindesc (v3) Changes how levels work in game.
 *@help Changes the way level ups work by making level ups
 *a factor of battle only. After battle, the actor's levels
 *revert back to their default inital value. This script is
@@ -20,6 +20,11 @@
 *Changes:
 *v2: Fixed a problem with characters not de-leveling with negative
 *<level:x> tag.
+*
+*v3: The level displayed is now a sum of the actor's attack, defense,
+*magic attack, magic defense, agility and luck. The current EXP shown
+*on menu status is an indicator of that actor's EXP Multiplier. You can
+*change this from the database.
 *
 *@param Use Power Level
 *@default true
@@ -47,7 +52,6 @@ var params = PluginManager.parameters('Synrec_Powerlevel');
 var powerLevel = params['Use Power Level'].toLowerCase();
 var hpHealingFactor = parseFloat(params['Heal HP On Level Up']);
 var mpHealingFactor = parseFloat(params['Heal MP On Level Up']);
-console.log(mpHealingFactor);
 
 synrecInitMembers = Game_BattlerBase.prototype.initMembers;
 Game_BattlerBase.prototype.initMembers = function() {
@@ -156,5 +160,35 @@ synrecNoExpBattle = BattleManager.gainExp;
 BattleManager.gainExp = function() {
     if(powerLevel !== 'true'){
 		synrecNoExpBattle.call(this);
+	}
+};
+
+synrecDrawActorLevel = Window_Base.prototype.drawActorLevel;
+Window_Base.prototype.drawActorLevel = function(actor, x, y) {
+	if (powerLevel !== 'true'){
+		synrecDrawActorLevel.call(this, actor, x, y);
+	}
+	if (powerLevel == 'true'){
+		var powerLevels = actor.level + actor.atk + actor.def + actor.mat + actor.mdf + actor.agi + actor.luk;
+		this.changeTextColor(this.systemColor());
+		this.drawText(TextManager.levelA, x, y, 48);
+		this.resetTextColor();
+		this.drawText(powerLevels, x + 84, y, 36, 'right');
+	}
+};
+
+synrecDrawExpInfo = Window_Status.prototype.drawExpInfo;
+Window_Status.prototype.drawExpInfo = function(x, y) {
+	if(powerLevel !== 'true'){
+		synrecDrawExpInfo.call(this, x, y);
+	}
+	if(powerLevel == 'true'){
+		var lineHeight = this.lineHeight();
+		var expTotal = TextManager.expTotal.format(TextManager.exp);
+		var value1 = this._actor.exr;
+		this.changeTextColor(this.systemColor());
+		this.drawText(expTotal, x, y + lineHeight * 0, 270);
+		this.resetTextColor();
+		this.drawText(value1, x, y + lineHeight * 1, 270, 'right');
 	}
 };
