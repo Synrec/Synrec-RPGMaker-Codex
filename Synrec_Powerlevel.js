@@ -1,6 +1,6 @@
 /*:
 *@author Kaisyl/Synrec
-*@plugindesc (v1) Changes how levels work in game.
+*@plugindesc (v2) Changes how levels work in game.
 *@help Changes the way level ups work by making level ups
 *a factor of battle only. After battle, the actor's levels
 *revert back to their default inital value. This script is
@@ -16,6 +16,10 @@
 *
 *Tags with <level:x> Do not show level up changes in battle.
 *Tags with <exp:x> Show incremental level up changes in battle.
+*
+*Changes:
+*v2: Fixed a problem with characters not de-leveling with negative
+*<level:x> tag.
 *
 *@param Use Power Level
 *@default true
@@ -133,8 +137,16 @@ Game_Actor.prototype.performAction = function(action) {
 		}
 		if ($dataSkills[skillId].meta.level !== undefined){
 			var levelUps = $dataSkills[skillId].meta.level;
-			for (i = 0; i < levelUps; i++){
-				this.levelUp();
+			if (levelUps > 0){
+				for (i = 0; i < levelUps; i++){
+					this.levelUp();
+				}
+			}
+			if (levelUps <= 0){
+				levelUps = -(levelUps);
+				for (i = 0; i < levelUps; i++){
+					this.levelDown();
+				}
 			}
 		}
 	}
