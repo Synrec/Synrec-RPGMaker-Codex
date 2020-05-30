@@ -25,6 +25,12 @@
  *If you use this in commercial projects, please let me know so I can check it out,
  *it is not mandatory to do so however.
  *----------------------------------------------------------------------------------
+ *Allow a state to stack with <stateStackable>, define its max state stack with 
+ *<maxStack:x> where x is an integer number. Define overflow state with <overflowState:x>
+ *where x is an integer number.
+ *
+ *Not defining a max stack will lead to errors.
+ *
  *This script at its current version does not have any plugin commands. If there is a
  *feature you would like implemented, please message me and let me know.
  *
