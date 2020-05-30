@@ -1,20 +1,9 @@
 /*:
- *@author Kaisyl/Synrec
- *@plugindesc (v6) Allows State stacking
- *@help Use the tag <stateStackable:x> to allow a state to stack.
- *Use <stackBurst:x> to remove all state stacks and add a new state
- *when max stack conditions are met.
- *Use <stackOverFlow:x> to indicate an overflow state, the state
- *that is added after burst conditions are met. Overflow states
- *are added only once.
- *
- *Where x = state ID; eg: Knockout is generally state ID '1' so x = 1.
- *DO NOT RESELL THIS SCRIPT AS IS.
- *FREE TO USE IN FREE OR COMMERCIAL PROJECTS.
- *DO NOT MODIFY AND THEN ASK FOR MY HELP.
- *THIS SCRIPT WILL BE OPTIMIZED IN THE FUTURE!
- *
- *Changelog:
+ *@author Synrec Codex
+ *@plugindesc (v1.0) A state stacker plugin which indicates the amount
+ *of stacks a state has.
+ *@help
+ *Change Log:
  *v1: Released publically.
  *v2: Fixed errors causing the secondary burst effect to not occur.
  *Fixed the problem of burst effect not stacking.
@@ -26,61 +15,123 @@
  *maximum.
  *v6: Removed state icon duplication, added a number which indicates stack
  *amount.
+ *v1.0: Multiple bug fixes: No turn count, no step count and general incompatibility
+ *with game engine repaired. Stacked states are no innate to the game engine. Due to
+ *how status windows work, it was decided to leave the status window as is to ensure
+ *cross-compatibility with other plugins.
  *
- *@param State Overflow
- *@default false
- *@type boolean
- *@desc Allow states to overflow after burst effect.
+ *DO NOT RESELL THIS SCRIPT.
+ *FREE TO USE IN FREE OR COMMERCIAL PROJECTS.
+ *If you use this in commercial projects, please let me know so I can check it out,
+ *it is not mandatory to do so however.
+ *----------------------------------------------------------------------------------
+ *This script at its current version does not have any plugin commands. If there is a
+ *feature you would like implemented, please message me and let me know.
+ *
  */
- 
-var params = PluginManager.parameters('Synrec_State_Stacker');
-var overFlow = params['State Overflow'].toLowerCase();
-var stateCount = 0;
-var stateStackable = 0;
-var stackBurst = 0;
-var stateCounter = [];
-
-synrecAddState = Game_Battler.prototype.addState;
-Game_Battler.prototype.addState = function(stateId) {
-	stateCount = 0;
-	stateStackable = parseInt($dataStates[stateId].meta.stateStackable);
-	stackBurst = parseInt($dataStates[stateId].meta.stackBurst);
-	for (i = 0; i < this._states.length; i++){
-		if (this._states[i] == stateId){
-			stateCount++;
-		}
+//-------------GAME---------------STATE--------------------OBJECT---------------------//
+synrecBattlerBaseNewState = Game_BattlerBase.prototype.addNewState;
+Game_BattlerBase.prototype.addNewState = function(stateId) {
+	if ($dataStates[stateId].meta.stackableState == true){
+		this.addStackableState(stateId);
 	}
-	if ((isNaN(stateStackable) == false  ||(isNaN(stateStackable) == false && isNaN(stackBurst) == false)) && !this.isStateAffected(stackBurst)){
-		if (stateStackable !== 0){
-			if (stateCount < stateStackable && !this.isStateAffected(stackBurst)){
-				this.addNewState(stateId); //addState.
-				stateCount++;
-				this.refresh;
-			}	
-		}
-		if (stateCount >= stateStackable && !this.isStateAffected(stackBurst) && isNaN(stackBurst) == false){
-			for (i = 0; i < stateCount; i++){
-				this.removeState(stateId);
-			}
-			this.addNewState(stackBurst);
-			this.refresh();
-		}
-		if (overFlow == 'true' && this.isStateAffected(stackBurst)){
-			var overFlowState = parseInt($dataStates[stateId].meta.stackOverFlow)
-			if (isNaN(overFlowState) == false){
-				this.addNewState(overFlowState);
-				this.refresh;
-			}
-		}
-	}
-	if (isNaN(stateStackable) == true || (isNaN(stackBurst) == true && isNaN(stateStackable) == true)){
-		synrecAddState.call(this, stateId);
+	else{
+		synrecBattlerBaseNewState.call(this, stateId);
 	}
 };
 
+Game_BattlerBase.prototype.addStackableState = function(stateId){
+	var stack = 0;
+	var states = this._states;
+	states.forEach(function(stateId){
+		stack++;
+		console.log(stack);
+	});
+	if (stack < $dataStates[stateId].meta.maxStack){
+		if (stateId === this.deathStateId()) {
+			this.die();
+		}
+		var restricted = this.isRestricted();
+		states.push(stateId);
+		this.sortStates();
+		if (!restricted && this.isRestricted()) {
+			this.onRestrict();
+		}
+	}
+	if (stack >= $dataStates[stateId].meta.maxStack && $dataStates[stateId].meta.overflowState !== undefined){
+		this.addOverflowState(stateId, $dataStates[stateId].meta.overflowState);
+	}
+};
+
+Game_BattlerBase.prototype.addOverflowState = function(stateId, overflowStateId){
+	this.removeUnderFlow(stateId);
+	if (overflowStateId === this.deathStateId()) {
+		this.die();
+	}
+	var restricted = this.isRestricted();
+	this._states.push(overflowStateId);
+	this.sortStates();
+	if (!restricted && this.isRestricted()) {
+		this.onRestrict();
+	}
+}
+
+Game_BattlerBase.prototype.removeUnderFlow = function(stateId){
+	var states = this._states;
+	var indexRemove = states.indexOf(stateId);
+	states.forEach(function(element){
+		states.splice(indexRemove);
+	})		
+}
+
+Game_BattlerBase.prototype.stateIcons = function() {
+    return this.states().map(function(state) {
+        return state.iconIndex;
+    }).filter(function(iconIndex) {
+        return iconIndex > 0;
+    });
+};
+
+synrecBattlerAddState = Game_Battler.prototype.addState;
+Game_Battler.prototype.addState = function(stateId) {
+    if ($dataStates[stateId].meta.stackableState == true){
+		this.addNewState(stateId);
+		this.refresh();
+		this.resetStateCounts(stateId);
+        this._result.pushAddedState(stateId);
+	}else{
+		synrecBattlerAddState.call(this, stateId);
+	}
+};
+
+synrecBattlerRemoveState = Game_Battler.prototype.removeState;
+Game_Battler.prototype.removeState = function(stateId) {
+	if ($dataStates[stateId].meta.stackableState == true){
+		var states = this._states;
+		var stacks = 0;
+		for(i = 0; i < states.length; i++){
+			if (states[i] == stateId){
+				stacks++;
+			}
+		}
+		for (i = 0; i < stacks; i++){
+			if (stateId === this.deathStateId()) {
+				this.revive();
+			}
+			this.eraseState(stateId);
+			this.refresh();
+			this._result.pushRemovedState(stateId);
+		}
+	}else{
+		synrecBattlerRemoveState.call(this, stateId);
+	}
+};
+
+//---------------------WINDOW-------------------BASE-------------------EDIT----------//
 function arrayDuplioChkr(Arr1, Arr2){
 	var lastItem = [0];
 	var lastIndex = [0];
+	stateCounter = [];
 	var y = 0;
 	console.log(lastIndex + ' ' + Arr2);
 	for (i = 0; i < Arr1.length; i++){
@@ -125,7 +176,6 @@ Window_Base.prototype.drawActorIcons = function(actor, x, y, width) {
 	var iconCounts = actor.allIcons();
 	actorIcons = Array.from(new Set(actor.allIcons()));
 	var icons = actorIcons.slice(0, Math.floor(width / Window_Base._iconWidth));
-	stateCounter = [];
 	arrayDuplioChkr(iconCounts,icons);
 	for (var i = 0; i < icons.length; i++) {
 		this.drawIcon(icons[i], x + Window_Base._iconWidth * i, y + 2);
